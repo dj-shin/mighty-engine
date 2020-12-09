@@ -1,4 +1,5 @@
 from mighty import Game
+from mighty.card import Shape
 
 
 if __name__ == '__main__':
@@ -22,6 +23,8 @@ if __name__ == '__main__':
                     shape = None
                 elif shape not in list(map(lambda x: x.value, Shape)):
                     continue
+                else:
+                    shape = Shape(shape)
 
                 valid = game.pledge_step(shape=shape, count=count)
                 if valid:
@@ -30,6 +33,8 @@ if __name__ == '__main__':
                 continue
 
     game.prepare_extra_hand()
+    boss = game.boss
+    assert boss is not None
     hand = game.hand(player=boss)
     print('Boss extra hand: {}'.format(hand))
     discard = list(map(int, input('Discard: ').split()))

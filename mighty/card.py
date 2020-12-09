@@ -1,4 +1,6 @@
+# pyright: strict
 from enum import Enum
+from typing import Optional, Union
 
 
 class Shape(Enum):
@@ -8,7 +10,18 @@ class Shape(Enum):
     S = 'spade'
 
 
-class Card:
+class CardBase:
+    def is_mighty(self, kiru: Optional[Shape]) -> bool:
+        raise NotImplementedError()
+
+    def deal_score(self, kiru: Optional[Shape]) -> int:
+        raise NotImplementedError()
+
+    def score(self) -> int:
+        raise NotImplementedError()
+
+
+class NormalCard(CardBase):
     NUM_MAP = {
         2: '2',
         3: '3',
@@ -25,34 +38,45 @@ class Card:
         14: 'A',
     }
 
-    def __init__(self, shape, number, joker):
+    def __init__(self, shape: Shape, number: int) -> None:
+        super().__init__()
         self.shape = shape
         self.number = number
-        self.joker = joker
 
-    def is_mighty(self, kiru):
+    def is_mighty(self, kiru: Optional[Shape]) -> bool:
         return (kiru == Shape.S and self.shape == Shape.D and self.number == 14)\
                 or (kiru != Shape.S and self.shape == Shape.S and self.number == 14)
 
-    def deal_score(self, kiru):
-        if self.joker:
-            return -1
-        elif self.is_mighty(kiru):
+    def deal_score(self, kiru: Optional[Shape]) -> int:
+        if self.is_mighty(kiru):
             return 0
         elif self.number >= 10:
             return 1
         else:
             return 0
 
-    def score(self):
+    def score(self) -> int:
         if self.number >= 10:
             return 1
         else:
             return 0
 
-    def __repr__(self):
-        if self.joker:
-            return '[Joker]'
+    def __repr__(self) -> str:
         return '({} {})'.format(self.shape.value, self.NUM_MAP[self.number])
 
+class Joker(CardBase):
+    def is_mighty(self, kiru: Optional[Shape]) -> bool:
+        return False
+
+    def deal_score(self, kiru: Optional[Shape]) -> int:
+        return -1
+
+    def score(self) -> int:
+        return 0
+
+    def __repr__(self) -> str:
+        return '(Joker)'
+
+
+Card = Union[NormalCard, Joker]
 

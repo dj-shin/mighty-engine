@@ -1,0 +1,6 @@
+{
+  "include": ["mighty"],
+
+  "reportTypeshedErrors": true,
+  "reportMissingImports": true
+}
