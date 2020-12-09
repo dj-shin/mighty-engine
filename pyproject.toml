@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "mighty"
+version = "0.1.0"
+description = ""
+authors = ["DongJin Shin <dongjin.shin.00@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = "^3.6"
+pytest = "^6.1.2"
+
+[tool.poetry.dev-dependencies]
+flake8 = "^3.8.4"
+pytest = "^6.1.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
