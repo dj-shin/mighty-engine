@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="mighty-engine-dj-shin", # Replace with your own username
+    name="mighty-dj-shin", # Replace with your own username
     version="0.0.1",
     author="DongJin Shin",
     author_email="dongjin.shin.00@gmail.com",
