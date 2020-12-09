@@ -54,7 +54,7 @@ class Game:
             player = self.pledge_queue.pop(0)
             self._turn_player = self.pledge_queue[0]
             return True
-        
+
         valid = self._check_pledge_valid(shape, count)
         if valid:
             player = self.pledge_queue.pop(0)
@@ -80,7 +80,6 @@ class Game:
         elif a.shape.value > b.shape.value:
             return 1
         return b.number - a.number
-
 
     def hand(self, player: Player) -> List[Card]:
         return sorted(self._hands[player], key=cmp_to_key(lambda x, y: self._compare_card(x, y)))
@@ -128,4 +127,3 @@ class Game:
 
     def final_summary(self) -> str:
         raise NotImplementedError()
-

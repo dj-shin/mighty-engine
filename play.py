@@ -2,6 +2,28 @@ from mighty import Game
 from mighty.card import Shape
 
 
+def pledge_until_valid(game):
+    while True:
+        try:
+            shape, count = input().split()
+            count = int(count)
+            if count == 0:
+                shape = None
+                count = None
+            elif shape == 'no':
+                shape = None
+            elif shape not in list(map(lambda x: x.value, Shape)):
+                continue
+            else:
+                shape = Shape(shape)
+
+            valid = game.pledge_step(shape=shape, count=count)
+            if valid:
+                break
+        except Exception:
+            continue
+
+
 if __name__ == '__main__':
     game = Game()
 
@@ -12,25 +34,7 @@ if __name__ == '__main__':
         player = game.turn_player()
         print('Player {}: {}'.format(player, game.hand(player=player)))
 
-        while True:
-            try:
-                shape, count = input().split()
-                count = int(count)
-                if count == 0:
-                    shape = None
-                    count = None
-                elif shape == 'no':
-                    shape = None
-                elif shape not in list(map(lambda x: x.value, Shape)):
-                    continue
-                else:
-                    shape = Shape(shape)
-
-                valid = game.pledge_step(shape=shape, count=count)
-                if valid:
-                    break
-            except Exception:
-                continue
+        pledge_until_valid(game)
 
     game.prepare_extra_hand()
     boss = game.boss

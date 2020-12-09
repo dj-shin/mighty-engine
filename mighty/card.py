@@ -64,6 +64,7 @@ class NormalCard(CardBase):
     def __repr__(self) -> str:
         return '({} {})'.format(self.shape.value, self.NUM_MAP[self.number])
 
+
 class Joker(CardBase):
     def is_mighty(self, kiru: Optional[Shape]) -> bool:
         return False
@@ -79,4 +80,3 @@ class Joker(CardBase):
 
 
 Card = Union[NormalCard, Joker]
-
