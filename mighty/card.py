@@ -64,8 +64,19 @@ class NormalCard(CardBase):
     def __repr__(self) -> str:
         return '({} {})'.format(self.shape.value, self.NUM_MAP[self.number])
 
+    def is_joker_call(self, kiru: Optional[Shape]) -> bool:
+        if kiru == Shape.C:
+            return self.shape == Shape.H and self.number == 3
+        else:
+            return self.shape == Shape.C and self.number == 3
+
 
 class Joker(CardBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.shape = None
+        self.number = None
+
     def is_mighty(self, kiru: Optional[Shape]) -> bool:
         return False
 

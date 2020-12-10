@@ -53,9 +53,16 @@ if __name__ == '__main__':
             print(hand)
             while True:
                 card = int(input('Card: '))
-                valid = game.submit(card=card)
-                if valid:
-                    break
+                valid, actions = game.check_submit(card=card)
+                if not valid:
+                    continue
+                elif actions:
+                    print(actions)
+                    action = actions[int(input())]
+                    game.submit(card=card, action=action)
+                else:
+                    game.submit(card=card, action=None)
+                break
             print(game.submitted_cards())
         print(game.round_summary())
     print(game.final_summary())

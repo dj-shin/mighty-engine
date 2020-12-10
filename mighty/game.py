@@ -4,6 +4,7 @@ from functools import cmp_to_key
 from typing import Tuple, Optional, List
 
 from .card import Shape, Card, Joker, NormalCard
+from .action import Action, JokerCall, JokerShape
 
 
 Player = int
@@ -30,7 +31,7 @@ class Game:
     def pledge_start(self, player: Player, min_count: int = 13) -> None:
         self.boss = None
         self._turn_player = player
-        self.shape = None
+        self.kiru = None
         self.count = min_count - 2
         self.pledge_queue = [(player + i) % self.NUM_PLAYERS for i in range(self.NUM_PLAYERS)]
 
@@ -38,28 +39,28 @@ class Game:
         return len(self.pledge_queue) == 1 or self.count == 20
 
     def current_pledge(self) -> Tuple[Optional[Player], Optional[Shape], Optional[int]]:
-        return self.boss, self.shape, self.count
+        return self.boss, self.kiru, self.count
 
-    def _check_pledge_valid(self, shape: Optional[Shape], count: int) -> bool:
+    def _check_pledge_valid(self, kiru: Optional[Shape], count: int) -> bool:
         if count == 20:
             return True
-        current_value = self.count + 1 if self.shape is None else self.count
-        new_value = count + 1 if shape is None else count
+        current_value = self.count + 1 if self.kiru is None else self.count
+        new_value = count + 1 if kiru is None else count
         if new_value > current_value:
             return True
         return False
 
-    def pledge_step(self, shape: Optional[Shape], count: Optional[int]) -> bool:
+    def pledge_step(self, kiru: Optional[Shape], count: Optional[int]) -> bool:
         if count is None:
             player = self.pledge_queue.pop(0)
             self._turn_player = self.pledge_queue[0]
             return True
 
-        valid = self._check_pledge_valid(shape, count)
+        valid = self._check_pledge_valid(kiru, count)
         if valid:
             player = self.pledge_queue.pop(0)
             self.boss = player
-            self.shape = shape
+            self.kiru = kiru
             self.count = count
             self._turn_player = self.pledge_queue[0]
             self.pledge_queue.append(player)
@@ -71,9 +72,9 @@ class Game:
         if isinstance(b, Joker):
             return 1
 
-        if a.shape == self.shape and b.shape != self.shape:
+        if a.shape == self.kiru and b.shape != self.kiru:
             return -1
-        if a.shape != self.shape and b.shape == self.shape:
+        if a.shape != self.kiru and b.shape == self.kiru:
             return 1
         if a.shape.value < b.shape.value:
             return -1
@@ -95,10 +96,14 @@ class Game:
         self._hands[self.boss] = hand
         self._turn_player = self.boss
 
-        self.round_shape = None
+        self.round_count = 1
+        self._init_round()
+        self._round_result = []
+
+    def _init_round(self):
+        self.round_shape = None     # type: Optional[Shape]
         self.round_first = True
         self.joker_called = False
-        self.round_count = 1
         self.submitted = [None for _ in range(self.NUM_PLAYERS)]    # type: List[Optional[Card]]
 
     def round_state(self) -> str:
@@ -108,16 +113,74 @@ class Game:
         return summary
 
     def _check_card_valid(self, card: Card) -> bool:
-        raise NotImplementedError()
+        if isinstance(card, Joker):
+            return True
+        if card.is_mighty(self.kiru):
+            return True
 
-    def submit(self, card: int) -> None:
+        if self.round_count == 1 and self.round_first and card.shape == self.kiru:
+            return False
+
+        hand = self._hands[self.turn_player()]   # type: List[Card]
+        if filter(lambda c: c.shape == self.round_shape, hand) and card.shape != self.round_shape:
+            return False
+
+        if self.joker_called and filter(lambda c: isinstance(c, Joker), hand):
+            return False
+
+        return True
+
+    def check_submit(self, card: int) -> Tuple[bool, List[Action]]:
         player = self.turn_player()
-        assert player is not None
         hand = self.hand(player)    # type: List[Card]
         card_inst = hand[card]
 
         if self._check_card_valid(card_inst):
-            self.submitted[player] = card_inst
+            return True, self._possible_actions(card_inst)
+        return False, []
+
+    def submit(self, card: int, action: Optional[Action], check: bool = False) -> None:
+        player = self.turn_player()
+        hand = self.hand(player)    # type: List[Card]
+
+        if check:
+            assert self._check_card_valid(hand[card])
+            assert action in self._possible_actions(hand[card])
+
+        card_inst = hand.pop(card)
+        self.submitted[player] = card_inst
+
+        if isinstance(card_inst, Joker):
+            assert isinstance(action, JokerShape)
+            if self.round_first:
+                self.round_first = False
+                self.round_shape = action.shape
+        else:
+            if isinstance(action, JokerCall):
+                self.joker_called = True
+            if self.round_first:
+                self.round_first = False
+                self.round_shape = card_inst.shape
+
+        round_done = not (None in self.submitted)
+        if round_done:
+            winner = self._eval_winner()
+            self._round_result.append({
+                'winner': winner,
+                'cards': self.submitted,
+            })
+            self.round_count += 1
+            self._init_round()
+
+    def _eval_winner(self) -> Player:
+        raise NotImplementedError()
+
+    def _possible_actions(self, card: Card) -> List[Action]:
+        if isinstance(card, Joker):
+            return [JokerShape(shape) for shape in Shape]
+        if card.is_joker_call(self.kiru):
+            return [JokerCall(True), JokerCall(False)]
+        return []
 
     def submitted_cards(self) -> List[Card]:
         raise NotImplementedError()
