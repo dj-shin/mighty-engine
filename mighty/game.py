@@ -95,7 +95,8 @@ class Game:
     def discard_extra(self, discard: List[int]) -> None:
         assert self.boss is not None
         extra = self.hand(self.boss)    # type: List[Card]
-        logging.debug('Discarding {}'.format([extra[i] for i in discard]))
+        self.discarded = [extra[i] for i in discard]
+        logging.debug('Discarding {}'.format(self.discarded))
         hand = [extra[i] for i in range(len(extra)) if i not in discard]
         self._hands[self.boss] = hand
         self._turn_player = self.boss
@@ -109,6 +110,9 @@ class Game:
         self.round_first = True
         self.joker_called = False
         self.submitted = [None for _ in range(self.NUM_PLAYERS)]    # type: List[Optional[Card]]
+        hand_len = len(self._hands[0])
+        for i in range(1, self.NUM_PLAYERS):
+            assert hand_len == len(self._hands[i])
 
     def round_state(self) -> str:
         summary = 'Shape: {}'.format(self.round_shape)
@@ -153,6 +157,7 @@ class Game:
     def submit(self, card: int, action: Optional[Action], check: bool = False) -> None:
         player = self.turn_player()
         hand = self.hand(player)    # type: List[Card]
+        assert card < len(hand)
 
         if check:
             assert self._check_card_valid(hand[card])
@@ -163,10 +168,11 @@ class Game:
         self._hands[player] = hand
 
         if isinstance(card_inst, Joker):
-            assert isinstance(action, JokerShape)
-            if self.round_first:
-                self.round_first = False
-                self.round_shape = action.shape
+            if action is not None:
+                assert isinstance(action, JokerShape)
+                if self.round_first:
+                    self.round_first = False
+                    self.round_shape = action.shape
         else:
             if isinstance(action, JokerCall):
                 self.joker_called = action.effect
@@ -230,6 +236,7 @@ class Game:
             winner, cards = r
             score = sum(map(lambda c: c.score(), cards))
             scores[winner] += score
+        assert sum(scores) + sum(map(lambda c: c.score(), self.discarded)) == 20
         return str(scores)
 
     def pick_friend(self, condition: str) -> None:
