@@ -1,8 +1,11 @@
+import logging
+import traceback
+
 from mighty import Game
 from mighty.card import Shape
 
 
-def pledge_until_valid(game):
+def pledge_until_valid(game: Game):
     while True:
         try:
             shape, count = input().split()
@@ -17,14 +20,16 @@ def pledge_until_valid(game):
             else:
                 shape = Shape(shape)
 
-            valid = game.pledge_step(shape=shape, count=count)
+            valid = game.pledge_step(kiru=shape, count=count)
             if valid:
                 break
         except Exception:
+            print(traceback.print_exc())
             continue
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     game = Game()
 
     game.pledge_start(player=0, min_count=13)
@@ -43,6 +48,8 @@ if __name__ == '__main__':
     print('Boss extra hand: {}'.format(hand))
     discard = list(map(int, input('Discard: ').split()))
     game.discard_extra(discard=discard)
+    friend_condition = input('Pick friend: ')
+    game.pick_friend(friend_condition)
 
     for r in range(10):
         print('Round {}'.format(r))
