@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mighty"
-version = "1.0.0"
+version = "1.0.1"
 description = "Mighty card game engine"
 authors = ["DongJin Shin <dongjin.shin.00@gmail.com>"]
 license = "MIT"
