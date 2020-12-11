@@ -5,6 +5,10 @@ description = "Mighty card game engine"
 authors = ["DongJin Shin <dongjin.shin.00@gmail.com>"]
 license = "MIT"
 
+readme = "README.md"
+homepage = "https://github.com/dj-shin/mighty-engine"
+repository = "https://github.com/dj-shin/mighty-engine"
+
 [tool.poetry.dependencies]
 python = "^3.6"
 pytest = "^6.1.2"
