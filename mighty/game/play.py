@@ -1,110 +1,19 @@
 # pyright: strict
 import logging
-import random
-from functools import cmp_to_key
 from typing import Tuple, Optional, List
 
-from .card import Shape, Card, Joker, NormalCard
-from .action import Action, JokerCall, JokerShape
+from .common import Player, PhaseBase
+from ..card import Shape, Card, Joker
+from ..action import Action, JokerCall, JokerShape
 
 
-Player = int
-
-
-class Game:
-    NUM_PLAYERS = 5
-
-    def __init__(self, hands: Optional[List[List[Card]]] = None) -> None:
-        cards = []
-        if hands is None:
-            for shape in Shape:
-                for number in range(2, 15):
-                    cards.append(NormalCard(shape, number))
-            cards.append(Joker())
-            random.shuffle(cards)
-            self._hands = [[] for _ in range(self.NUM_PLAYERS)]   # type: List[List[Card]]
-            for i in range(self.NUM_PLAYERS):
-                self._hands[i] = cards[i * 10:(i + 1) * 10]
-            self.extra = cards[-3:]
-        else:
-            assert len(hands) == self.NUM_PLAYERS + 1
-            self._hands = [hands[i] for i in range(self.NUM_PLAYERS)]   # type: List[List[Card]]
-            self.extra = hands[-1]
-
-    def turn_player(self) -> Player:
-        return self._turn_player
-
-    def pledge_start(self, player: Player, min_count: int = 13) -> None:
-        self.boss = None
-        self._turn_player = player
-        self.kiru = None
-        self.count = min_count - 2
-        self.pledge_queue = [(player + i) % self.NUM_PLAYERS for i in range(self.NUM_PLAYERS)]
-
-    def pledge_done(self) -> bool:
-        return (self.boss is not None and len(self.pledge_queue) == 1) or \
-               (self.boss is None and len(self.pledge_queue) == 0) or \
-               self.count == 20
-
-    def current_pledge(self) -> Tuple[Optional[Player], Optional[Shape], Optional[int]]:
-        return self.boss, self.kiru, self.count
-
-    def _check_pledge_valid(self, kiru: Optional[Shape], count: int) -> bool:
-        if count == 20:
-            return True
-        current_value = self.count + 1 if self.kiru is None else self.count
-        new_value = count + 1 if kiru is None else count
-        if new_value > current_value:
-            return True
-        return False
-
-    def pledge_step(self, kiru: Optional[Shape], count: Optional[int]) -> bool:
-        if count is None:
-            player = self.pledge_queue.pop(0)
-            self._turn_player = self.pledge_queue[0]
-            return True
-
-        valid = self._check_pledge_valid(kiru, count)
-        if valid:
-            player = self.pledge_queue.pop(0)
-            self.boss = player
-            self.kiru = kiru
-            self.count = count
-            self._turn_player = self.pledge_queue[0] if self.pledge_queue else player
-            self.pledge_queue.append(player)
-        return valid
-
-    def _compare_card(self, a: Card, b: Card) -> int:
-        if isinstance(a, Joker):
-            return -1
-        if isinstance(b, Joker):
-            return 1
-
-        if a.shape == self.kiru and b.shape != self.kiru:
-            return -1
-        if a.shape != self.kiru and b.shape == self.kiru:
-            return 1
-        if a.shape.value < b.shape.value:
-            return -1
-        elif a.shape.value > b.shape.value:
-            return 1
-        return b.number - a.number
-
-    def hand(self, player: Player) -> List[Card]:
-        return sorted(self._hands[player], key=cmp_to_key(lambda x, y: self._compare_card(x, y)))
-
-    def prepare_extra_hand(self) -> None:
-        assert self.boss is not None
-        self._hands[self.boss] += self.extra
-
-    def discard_extra(self, discard: List[int]) -> None:
-        assert self.boss is not None
-        extra = self.hand(self.boss)    # type: List[Card]
-        self.discarded = [extra[i] for i in discard]
-        logging.debug('Discarding {}'.format(self.discarded))
-        hand = [extra[i] for i in range(len(extra)) if i not in discard]
-        self._hands[self.boss] = hand
-        self._turn_player = self.boss
+class PlayPhase(PhaseBase):
+    def __init__(self, boss: Player, kiru: Optional[Shape], count: int,
+                 hands: List[List[Card]], discarded: List[Card]) -> None:
+        super().__init__(kiru, hands, boss)
+        self.boss = boss
+        self.count = count
+        self.discarded = discarded
 
         self.round_count = 1
         self._init_round()
@@ -115,9 +24,6 @@ class Game:
         self.round_first = True
         self.joker_called = False
         self.submitted = [None for _ in range(self.NUM_PLAYERS)]    # type: List[Optional[Card]]
-        hand_len = len(self._hands[0])
-        for i in range(1, self.NUM_PLAYERS):
-            assert hand_len == len(self._hands[i])
 
     def round_state(self) -> str:
         summary = 'Shape: {}'.format(self.round_shape)
@@ -162,7 +68,6 @@ class Game:
     def submit(self, card: int, action: Optional[Action], check: bool = False) -> None:
         player = self.turn_player()
         hand = self.hand(player)    # type: List[Card]
-        assert card < len(hand)
 
         if check:
             assert self._check_card_valid(hand[card])
@@ -172,12 +77,10 @@ class Game:
         self.submitted[player] = card_inst
         self._hands[player] = hand
 
-        if isinstance(card_inst, Joker):
-            if action is not None:
-                assert isinstance(action, JokerShape)
-                if self.round_first:
-                    self.round_first = False
-                    self.round_shape = action.shape
+        if isinstance(action, JokerShape):
+            if self.round_first:
+                self.round_first = False
+                self.round_shape = action.shape
         else:
             if isinstance(action, JokerCall):
                 self.joker_called = action.effect
@@ -243,6 +146,3 @@ class Game:
             scores[winner] += score
         assert sum(scores) + sum(map(lambda c: c.score(), self.discarded)) == 20
         return str(scores)
-
-    def pick_friend(self, condition: str) -> None:
-        pass

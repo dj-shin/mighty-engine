@@ -1,5 +1,5 @@
 {
-  "include": ["mighty", "play.py"],
+  "include": ["mighty", "play.py", "random_play.py"],
 
   "reportTypeshedErrors": true,
   "reportMissingImports": true

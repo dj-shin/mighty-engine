@@ -2,11 +2,11 @@ import random
 import logging
 import traceback
 
-from mighty import Game
+from mighty.game import PledgePhase, ExtraPhase, PlayPhase
 from mighty.card import Shape
 
 
-def pledge_until_valid(game: Game):
+def pledge_until_valid(game: PledgePhase):
     while True:
         try:
             # shape, count = input().split()
@@ -34,9 +34,7 @@ def pledge_until_valid(game: Game):
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     for _ in range(1000):
-        game = Game()
-
-        game.pledge_start(player=0, min_count=13)
+        game = PledgePhase(start_player=random.randrange(PledgePhase.NUM_PLAYERS), min_count=random.randrange(20))
         while not game.pledge_done():
             logging.debug('Boss: {}\tShape: {}\tCount: {}'.format(*game.current_pledge()))
             logging.debug('queue: {}'.format(game.pledge_queue))
@@ -45,9 +43,12 @@ if __name__ == '__main__':
 
             pledge_until_valid(game)
 
+        if game.boss is None:
+            continue
+
+        game = ExtraPhase(*game.pledge_result())
         game.prepare_extra_hand()
         boss = game.boss
-        assert boss is not None
         hand = game.hand(player=boss)
         logging.debug('Boss extra hand: {}'.format(hand))
         # discard = list(map(int, input('Discard: ').split()))
@@ -57,9 +58,10 @@ if __name__ == '__main__':
         friend_condition = 'mighty'
         game.pick_friend(friend_condition)
 
+        game = PlayPhase(*game.extra_result())
         for r in range(10):
             logging.debug('Round {}'.format(r))
-            for _ in range(Game.NUM_PLAYERS):
+            for _ in range(game.NUM_PLAYERS):
                 logging.debug(game.round_state())
                 player = game.turn_player()
                 hand = game.hand(player=player)

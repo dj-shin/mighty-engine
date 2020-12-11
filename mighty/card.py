@@ -1,6 +1,6 @@
 # pyright: strict
 from enum import Enum
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 
 class Shape(Enum):
@@ -12,13 +12,13 @@ class Shape(Enum):
 
 class CardBase:
     def is_mighty(self, kiru: Optional[Shape]) -> bool:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def deal_score(self, kiru: Optional[Shape]) -> int:
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def score(self) -> int:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class NormalCard(CardBase):
@@ -64,6 +64,14 @@ class NormalCard(CardBase):
     def __repr__(self) -> str:
         return '({} {})'.format(self.shape.value, self.NUM_MAP[self.number])
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, NormalCard):
+            return self.shape == other.shape and self.number == other.number
+        return False
+
+    def __hash__(self):
+        return hash(self.shape) ^ hash(self.number)
+
     def is_joker_call(self, kiru: Optional[Shape]) -> bool:
         if kiru == Shape.C:
             return self.shape == Shape.H and self.number == 3
@@ -88,6 +96,12 @@ class Joker(CardBase):
 
     def __repr__(self) -> str:
         return '(Joker)'
+
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, Joker)
+
+    def __hash__(self):
+        return hash('Joker') ^ hash('joker')
 
 
 Card = Union[NormalCard, Joker]
