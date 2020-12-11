@@ -14,17 +14,22 @@ Player = int
 class Game:
     NUM_PLAYERS = 5
 
-    def __init__(self) -> None:
+    def __init__(self, hands: Optional[List[List[Card]]] = None) -> None:
         cards = []
-        for shape in Shape:
-            for number in range(2, 15):
-                cards.append(NormalCard(shape, number))
-        cards.append(Joker())
-        random.shuffle(cards)
-        self._hands = [[] for _ in range(self.NUM_PLAYERS)]   # type: List[List[Card]]
-        for i in range(self.NUM_PLAYERS):
-            self._hands[i] = cards[i * 10:(i + 1) * 10]
-        self.extra = cards[-3:]
+        if hands is None:
+            for shape in Shape:
+                for number in range(2, 15):
+                    cards.append(NormalCard(shape, number))
+            cards.append(Joker())
+            random.shuffle(cards)
+            self._hands = [[] for _ in range(self.NUM_PLAYERS)]   # type: List[List[Card]]
+            for i in range(self.NUM_PLAYERS):
+                self._hands[i] = cards[i * 10:(i + 1) * 10]
+            self.extra = cards[-3:]
+        else:
+            assert len(hands) == self.NUM_PLAYERS + 1
+            self._hands = [hands[i] for i in range(self.NUM_PLAYERS)]   # type: List[List[Card]]
+            self.extra = hands[-1]
 
     def turn_player(self) -> Player:
         return self._turn_player
